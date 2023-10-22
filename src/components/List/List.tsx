@@ -4,6 +4,12 @@ import styled from 'styled-components';
 import Item from './Item';
 import { DATA } from './data';
 const GAP = 16;
+const BOUNDARY = {
+	left: 0,
+	right: 0,
+	top: 0,
+	bottom: 0,
+};
 type Boundary = {
 	top: number;
 	right: number;
@@ -13,60 +19,14 @@ type Boundary = {
 
 function List() {
 	const listRef = React.useRef<HTMLDivElement>(null);
+	const itemsRef = React.useRef(new Map());
 	const [listItems, setListItems] = React.useState(DATA);
-	const [listBoundary, setListBoundary] = React.useState({
-		left: 0,
-		right: 0,
-		top: 0,
-		bottom: 0,
-	});
-	const [itemsBoundary, rawSetItemsBoundary] = React.useState([
-		{
-			top: 247,
-			right: 540.5,
-			bottom: 307,
-			left: 480.5,
-		},
-		{
-			top: 323,
-			right: 540.5,
-			bottom: 383,
-			left: 480.5,
-		},
-		{
-			top: 399,
-			right: 540.5,
-			bottom: 459,
-			left: 480.5,
-		},
-		{
-			top: 475,
-			right: 540.5,
-			bottom: 535,
-			left: 480.5,
-		},
-		{
-			top: 551,
-			right: 540.5,
-			bottom: 611,
-			left: 480.5,
-		},
-	]);
+	const [listBoundary, setListBoundary] = React.useState(BOUNDARY);
+	const [itemsBoundary, setItemsBoundary] = React.useState<Boundary[]>([]);
 	const [draggedId, setDraggedId] = React.useState<null | number>(null);
 	const [dragTargetId, rawSetDragTargetId] = React.useState<null | number>(
 		null,
 	);
-
-	function setItemsBoundary(
-		order: number,
-		boundary: { left: number; right: number; top: number; bottom: number },
-	) {
-		console.log(order, boundary);
-		const nextItemsBoundary = JSON.parse(JSON.stringify(itemsBoundary));
-		nextItemsBoundary[order] = JSON.parse(JSON.stringify(boundary));
-		console.log(nextItemsBoundary);
-		rawSetItemsBoundary(nextItemsBoundary);
-	}
 
 	function changeListItemsOrder(
 		originalId: number | null,
@@ -105,11 +65,19 @@ function List() {
 		setListItems(nextListItems);
 	}
 
-	function setDragTargetId(order: number | null) {
-		if (order === null) {
+	function setDragTargetId({
+		type,
+		value,
+	}: {
+		type: 'order' | 'id';
+		value: number | null;
+	}) {
+		if (value === null) {
 			rawSetDragTargetId(null);
-		} else {
-			rawSetDragTargetId(listItems[order].id);
+		} else if (type === 'order') {
+			rawSetDragTargetId(listItems[value].id);
+		} else if (type === 'id') {
+			rawSetDragTargetId(value);
 		}
 	}
 
@@ -117,7 +85,6 @@ function List() {
 		id: number,
 		draggedId: number,
 		dragTargetId: number | null,
-		itemsBoundary: Boundary[],
 	) {
 		if (draggedId === dragTargetId) {
 			return 0;
@@ -127,16 +94,16 @@ function List() {
 			item => item.id === dragTargetId,
 		);
 		const order = listItems.findIndex(item => item.id === id);
-		if (draggedOrder === -1 || dragTargetOrder === -1 || order === -1) {
-			return 0;
-		}
 		const { bottom, top } = itemsBoundary[draggedOrder];
-		if (dragTargetOrder === null) {
+		const displacement = bottom - top + GAP;
+		// out of boundary
+		if (dragTargetOrder === -1) {
 			if (order < draggedOrder) {
 				return 0;
 			}
-			return -(bottom - top) - GAP;
+			return -displacement;
 		}
+		// in boundary
 		if (order > draggedOrder && order > dragTargetOrder) {
 			return 0;
 		}
@@ -144,10 +111,10 @@ function List() {
 			return 0;
 		}
 		if (draggedOrder > dragTargetOrder) {
-			return bottom - top + GAP;
+			return displacement;
 		}
 		if (draggedOrder < dragTargetOrder) {
-			return -(bottom - top) - GAP;
+			return -displacement;
 		}
 		console.log(
 			`getTransFormYDistance Error! order: ${order}, draggedOrder: ${draggedOrder}, dragTargetOrder: ${dragTargetOrder}`,
@@ -164,6 +131,18 @@ function List() {
 		setListBoundary({ top, right, bottom, left });
 	}, []);
 
+	React.useEffect(() => {
+		if (!itemsRef.current) {
+			return;
+		}
+		const boundaries: Boundary[] = [];
+		itemsRef.current.forEach(value => {
+			const { top, right, bottom, left } = value.getBoundingClientRect();
+			boundaries.push({ top, right, bottom, left });
+		});
+		setItemsBoundary(boundaries);
+	}, []);
+
 	return (
 		<Wrapper>
 			<ListWrapper ref={listRef}>
@@ -171,10 +150,10 @@ function List() {
 					<Item
 						key={id}
 						id={id}
+						ref={itemsRef}
 						backgroundColor={backgroundColor}
 						listBoundary={listBoundary}
 						itemsBoundary={itemsBoundary}
-						setItemsBoundary={setItemsBoundary}
 						draggedId={draggedId}
 						setDraggedId={setDraggedId}
 						dragTargetId={dragTargetId}
@@ -203,7 +182,7 @@ const ListWrapper = styled.div`
 	padding: 16px;
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: ${GAP}px;
 `;
 
 export default List;

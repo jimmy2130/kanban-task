@@ -39,48 +39,52 @@ function getDragTargetOrder(
 	return itemsBoundary.length - 1;
 }
 
-function Item({
-	id,
-	backgroundColor,
-	listBoundary,
-	itemsBoundary,
-	setItemsBoundary,
-	draggedId,
-	setDraggedId,
-	dragTargetId,
-	setDragTargetId,
-	changeListItemsOrder,
-	getTransFormYDistance,
-	children,
-}: {
-	id: number;
-	backgroundColor: string;
-	listBoundary: Boundary;
-	itemsBoundary: Boundary[];
-	setItemsBoundary: (order: number, boundary: Boundary) => void;
-	draggedId: null | number;
-	setDraggedId: (order: number | null) => void;
-	dragTargetId: null | number;
-	setDragTargetId: (order: number | null) => void;
-	changeListItemsOrder: (
-		originalOrder: number | null,
-		targetOrder: number | null,
-	) => void;
-	getTransFormYDistance: (
-		id: number,
-		draggedId: number,
-		dragTargetId: number | null,
-		itemsBoundary: Boundary[],
-	) => number;
-	children: React.ReactNode;
-}) {
+function Item(
+	{
+		id,
+		backgroundColor,
+		listBoundary,
+		itemsBoundary,
+		draggedId,
+		setDraggedId,
+		dragTargetId,
+		setDragTargetId,
+		changeListItemsOrder,
+		getTransFormYDistance,
+		children,
+	}: {
+		id: number;
+		backgroundColor: string;
+		listBoundary: Boundary;
+		itemsBoundary: Boundary[];
+		draggedId: null | number;
+		setDraggedId: (order: number | null) => void;
+		dragTargetId: null | number;
+		setDragTargetId: ({
+			type,
+			value,
+		}: {
+			type: 'order' | 'id';
+			value: number | null;
+		}) => void;
+		changeListItemsOrder: (
+			originalOrder: number | null,
+			targetOrder: number | null,
+		) => void;
+		getTransFormYDistance: (
+			id: number,
+			draggedId: number,
+			dragTargetId: number | null,
+		) => number;
+		children: React.ReactNode;
+	},
+	ref: any,
+) {
 	const [isDragging, setIsDragging] = React.useState(false);
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
 
 	const isOutOfBoundary = isOut(currentPosition, listBoundary);
-
-	const target = React.useRef<HTMLDivElement>(null);
 
 	React.useEffect(() => {
 		function handlePointerDown({ clientX, clientY }: PointerEvent) {
@@ -88,10 +92,11 @@ function Item({
 			setStartPosition({ x: clientX, y: clientY });
 			setCurrentPosition({ x: clientX, y: clientY });
 			setDraggedId(id);
+			setDragTargetId({ type: 'id', value: id });
 		}
-		target.current?.addEventListener('pointerdown', handlePointerDown);
+		ref.current.get(id).addEventListener('pointerdown', handlePointerDown);
 		return () => {
-			target.current?.removeEventListener('pointerdown', handlePointerDown);
+			ref.current.get(id).removeEventListener('pointerdown', handlePointerDown);
 		};
 	}, [currentPosition, startPosition]);
 
@@ -101,13 +106,14 @@ function Item({
 		}
 		function handlePointermove({ clientX, clientY }: PointerEvent) {
 			setCurrentPosition({ x: clientX, y: clientY });
-			setDragTargetId(
-				getDragTargetOrder(
+			setDragTargetId({
+				type: 'order',
+				value: getDragTargetOrder(
 					{ x: clientX, y: clientY },
 					itemsBoundary,
 					listBoundary,
 				),
-			);
+			});
 		}
 		window.addEventListener('pointermove', handlePointermove);
 		return () => {
@@ -121,7 +127,7 @@ function Item({
 			setStartPosition(POSITION);
 			setCurrentPosition(POSITION);
 			setDraggedId(null);
-			setDragTargetId(null);
+			setDragTargetId({ type: 'order', value: null });
 
 			changeListItemsOrder(draggedId, dragTargetId);
 		}
@@ -138,18 +144,20 @@ function Item({
 				'--y': isDragging
 					? `${currentPosition.y - startPosition.y}px`
 					: draggedId !== null
-					? `${getTransFormYDistance(
-							id,
-							draggedId,
-							dragTargetId,
-							itemsBoundary,
-					  )}px`
+					? `${getTransFormYDistance(id, draggedId, dragTargetId)}px`
 					: '0px',
 				'--background': backgroundColor,
 				'--cursor': isOutOfBoundary ? 'not-allowed' : 'pointer',
 				'--zIndex': isDragging ? 2 : 1,
 			}}
-			ref={target}
+			ref={node => {
+				const map = ref.current;
+				if (node) {
+					map.set(id, node);
+				} else {
+					map.delete(id);
+				}
+			}}
 		>
 			{children}
 		</Wrapper>
@@ -173,4 +181,4 @@ const Wrapper = styled.div`
 	font-size: calc(24 / 16 * 1rem);
 `;
 
-export default Item;
+export default React.forwardRef(Item);
