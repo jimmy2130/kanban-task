@@ -3,18 +3,13 @@ import * as React from 'react';
 import styled from 'styled-components';
 import Item from './Item';
 import { DATA } from './data';
-const GAP = 16;
+import { type Boundary, GAP } from './constants';
+
 const BOUNDARY = {
 	left: 0,
 	right: 0,
 	top: 0,
 	bottom: 0,
-};
-type Boundary = {
-	top: number;
-	right: number;
-	bottom: number;
-	left: number;
 };
 
 function List() {

@@ -1,14 +1,9 @@
+/* eslint-disable */
 import React from 'react';
 import styled from 'styled-components';
+import { type Boundary } from './constants';
 
 const POSITION = { x: -1, y: -1 };
-
-type Boundary = {
-	top: number;
-	right: number;
-	bottom: number;
-	left: number;
-};
 
 function isOut(
 	{ x, y }: { x: number; y: number },
