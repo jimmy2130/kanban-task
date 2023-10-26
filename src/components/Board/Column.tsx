@@ -24,14 +24,14 @@ function Column(
 }
 
 const Wrapper = styled.div`
-	border: solid #979797 2px;
-	border-radius: 4px;
+	flex-basis: 280px;
 	min-height: 200px;
-	max-width: 300px;
-	padding: 16px;
 	display: flex;
 	flex-direction: column;
 	gap: ${GAP}px;
+	padding-bottom: 20px;
+	padding-left: 12px;
+	padding-right: 12px;
 `;
 
 export default React.forwardRef(Column);

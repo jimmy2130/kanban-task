@@ -10,14 +10,18 @@ type Props = React.ComponentProps<'div'> & {
 function Task({ children, columnId, taskId, ...delegated }: Props, ref: any) {
 	return (
 		<Wrapper
-			ref={node => {
-				const map = ref.current;
-				if (node) {
-					map.set(taskId, { node, columnId, taskId });
-				} else {
-					map.delete(taskId);
-				}
-			}}
+			ref={
+				ref !== null
+					? node => {
+							const map = ref.current;
+							if (node) {
+								map.set(taskId, { node, columnId, taskId });
+							} else {
+								map.delete(taskId);
+							}
+					  }
+					: null
+			}
 			{...delegated}
 		>
 			{children}
@@ -26,13 +30,16 @@ function Task({ children, columnId, taskId, ...delegated }: Props, ref: any) {
 }
 
 const Wrapper = styled.div`
-	padding: 8px;
-	border-radius: 4px;
-	border: 1px solid #979797;
-	color: #979797;
-	font-size: calc(16 / 16 * 1rem);
-	transform: translate(var(--x), var(--y));
+	padding: 24px 16px;
+	border-radius: 8px;
+	transform: translate(var(--x, 0), var(--y, 0));
 	user-select: none;
+	background: var(--background, #2b2c37);
+	filter: drop-shadow(0px 4px 6px hsl(220deg 40% 35% / 0.1015));
+
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 
 	&:hover {
 		cursor: var(--cursor);

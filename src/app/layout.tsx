@@ -1,9 +1,14 @@
 import StyledComponentsRegistry from '@/components/StyledComponentsRegistry';
 import GlobalStyles from '@/components/GlobalStyles';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+const mainFont = Plus_Jakarta_Sans({
+	subsets: ['latin'],
+	display: 'fallback',
+	weight: ['500', '700'],
+	variable: '--font-family',
+});
 
 export const metadata: Metadata = {
 	title: 'Create Next App',
@@ -16,7 +21,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en">
+		<html lang="en" className={mainFont.variable}>
 			<body>
 				<StyledComponentsRegistry>
 					<GlobalStyles />

@@ -16,8 +16,8 @@ html, body, #root, #__next {
   height: 100%;
 }
 body {
-  line-height: 1.6;
-  font-family: 'Young Serif', sans-serif;
+  /* line-height: 1.6; */
+  font-family: var(--font-family), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 img, picture, video, canvas, svg {

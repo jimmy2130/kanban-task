@@ -17,7 +17,10 @@ map.set('b', 2);
 
 // TODO: what if window size is resized or scrolled?
 
-function useBoundingClientRect(): [{ current: Map<any, any> }, Boundary[]] {
+function useBoundingClientRect(startPosition: {
+	x: number;
+	y: number;
+}): [{ current: Map<any, any> }, Boundary[]] {
 	const refs = React.useRef(new Map());
 	const [boundaries, setBoundaries] = React.useState<Boundary[]>([]);
 
@@ -40,7 +43,7 @@ function useBoundingClientRect(): [{ current: Map<any, any> }, Boundary[]] {
 			});
 		});
 		setBoundaries(boundaries);
-	}, []);
+	}, [startPosition]);
 
 	return [refs, boundaries];
 }
