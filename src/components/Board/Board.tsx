@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import styled from 'styled-components';
+import Indicator from './Indicator';
 import Column from './Column';
 import Task from './Task';
 import { DATA } from './data3';
@@ -18,6 +19,8 @@ function Board({ boardId }: { boardId: string }) {
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
+	const columnWidth =
+		columnBoundaries.length !== 0 ? columnBoundaries[0].width : 0;
 	const isDragging = !(draggedTask === null);
 
 	function getDraggedTask({ x, y }: typeof POSITION) {
@@ -210,6 +213,7 @@ function Board({ boardId }: { boardId: string }) {
 						style={{
 							'--top': `${indicatorPosition.top}px`,
 							'--left': `${indicatorPosition.left}px`,
+							'--width': `${columnWidth}px`,
 						}}
 					/>
 				)}
@@ -302,17 +306,6 @@ const Wrapper = styled.div`
 
 const BoardWrapper = styled.div`
 	display: flex;
-`;
-
-const Indicator = styled.span`
-	--indicator-height: ${INDICATOR_HEIGHT}px;
-	position: fixed;
-	top: calc(var(--top) - var(--indicator-height) / 2);
-	left: var(--left);
-	width: calc(280px - 12px * 2);
-	height: var(--indicator-height);
-	background: white;
-	border-radius: calc(var(--indicator-height) / 2);
 `;
 
 const ColumnTitleWrapper = styled.div`

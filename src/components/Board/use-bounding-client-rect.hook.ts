@@ -11,12 +11,6 @@ type Boundary = {
 	columnId: string;
 };
 
-const map: Map<'a' | 'b', number> = new Map();
-map.set('a', 1);
-map.set('b', 2);
-
-// TODO: what if window size is resized or scrolled?
-
 function useBoundingClientRect(startPosition: {
 	x: number;
 	y: number;
