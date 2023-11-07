@@ -8,6 +8,7 @@ import useBoundingClientRect from './use-bounding-client-rect.hook';
 import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
 import { type Record, type SwapRequest } from '@/constants';
 import useSWRMutation from 'swr/mutation';
+import { useRouter } from 'next/navigation';
 
 async function swapRecord(
 	endpoint: string,
@@ -40,6 +41,7 @@ function Board({
 	boardName: string;
 	data: Record[];
 }) {
+	const router = useRouter();
 	const { trigger } = useSWRMutation('/api', swapRecord);
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
@@ -184,16 +186,13 @@ function Board({
 
 	React.useEffect(() => {
 		function swapTask() {
-			if (draggedTask === null || targetTask === null) {
+			if (
+				draggedTask === null ||
+				targetTask === null ||
+				draggedTask.taskId === undefined
+			) {
 				return;
 			}
-			const oldColumnId = draggedTask.columnId;
-			const newColumnId = targetTask.columnId;
-
-			if (draggedTask.taskId === undefined) {
-				return;
-			}
-
 			trigger({
 				taskId: draggedTask.taskId,
 				oldColumnId: draggedTask.columnId,
@@ -201,6 +200,7 @@ function Board({
 				targetPosition: targetTask.position,
 			});
 			revalidate('/');
+			router.refresh();
 		}
 		function handlePointerUp() {
 			setStartPosition(POSITION);
@@ -211,7 +211,7 @@ function Board({
 		return () => {
 			window.removeEventListener('pointerup', handlePointerUp);
 		};
-	}, [draggedTask, revalidate, targetTask, trigger]);
+	}, [draggedTask, revalidate, targetTask, trigger, router]);
 
 	const board = data.find(record => record.name === boardName);
 	if (!board) {
@@ -245,10 +245,16 @@ function Board({
 							</ColumnTitle>
 						</ColumnTitleWrapper>
 						{tasks.map(({ title, id: taskId }) => {
-							const totalSubtask = data[taskId].childId.length;
-							const completedSubtask = data[taskId].childId.filter(
-								({ id: subtaskId }) => data[subtaskId].isCompleted === true,
-							).length;
+							const task = data.find(r => r.id === taskId);
+							const totalSubtask = task === undefined ? 0 : task.childId.length;
+							const completedSubtask =
+								task === undefined
+									? 0
+									: task.childId.filter(
+											({ id: subtaskId }) =>
+												data.find(r => r.id === subtaskId)?.isCompleted ===
+												true,
+									  ).length;
 							const isTaskDragged =
 								draggedTask !== null && draggedTask.taskId === taskId;
 							return (
