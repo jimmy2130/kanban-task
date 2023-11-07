@@ -3,8 +3,8 @@ import * as React from 'react';
 import styled from 'styled-components';
 
 type Props = React.ComponentProps<'div'> & {
-	columnId: string;
-	taskId: string;
+	columnId: number;
+	taskId: number;
 };
 
 function Task({ children, columnId, taskId, ...delegated }: Props, ref: any) {

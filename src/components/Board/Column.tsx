@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { GAP } from './constants';
 
 function Column(
-	{ children, columnId }: { children: React.ReactNode; columnId: string },
+	{ children, columnId }: { children: React.ReactNode; columnId: number },
 	ref: any,
 ) {
 	return (

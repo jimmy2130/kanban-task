@@ -7,8 +7,8 @@ type Boundary = {
 	bottom: number;
 	width: number;
 	height: number;
-	taskId?: string;
-	columnId: string;
+	taskId?: number;
+	columnId: number;
 };
 
 function useBoundingClientRect(startPosition: {

@@ -4,18 +4,48 @@ import styled from 'styled-components';
 import Indicator from './Indicator';
 import Column from './Column';
 import Task from './Task';
-import { DATA } from './data3';
 import useBoundingClientRect from './use-bounding-client-rect.hook';
-import { POSITION, GAP, INDICATOR_HEIGHT, type Boundary } from './constants';
+import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
+import { type Record, type SwapRequest } from '@/constants';
+import useSWRMutation from 'swr/mutation';
 
-function Board({ boardId }: { boardId: string }) {
-	const [data, setData] = React.useState(DATA);
+async function swapRecord(
+	endpoint: string,
+	{
+		arg,
+	}: {
+		arg: SwapRequest;
+	},
+) {
+	const response = await fetch(endpoint, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(arg),
+	});
+	const json = await response.json();
+	if (json === 'success') {
+		return json;
+	}
+	throw json;
+}
+
+function Board({
+	revalidate,
+	boardName,
+	data,
+}: {
+	revalidate: (path: string) => void;
+	boardName: string;
+	data: Record[];
+}) {
+	const { trigger } = useSWRMutation('/api', swapRecord);
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
 	const [columnRef, columnBoundaries] = useBoundingClientRect(startPosition);
 	const [taskRef, taskBoundaries] = useBoundingClientRect(startPosition);
 
-	const board = data[boardId];
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
@@ -42,7 +72,7 @@ function Board({ boardId }: { boardId: string }) {
 
 	function getTargetTask({ x, y }: typeof POSITION) {
 		let isOut = true;
-		let targetColumnId = '';
+		let targetColumnId = -1;
 		for (let i = 0; i < columnBoundaries.length; i++) {
 			const { top, bottom, left, right, columnId } = columnBoundaries[i];
 			if (x >= left && x <= right && y >= top && y <= bottom) {
@@ -116,45 +146,6 @@ function Board({ boardId }: { boardId: string }) {
 		};
 	}
 
-	function swapTask() {
-		if (draggedTask === null) {
-			return;
-		}
-		const nextData = JSON.parse(JSON.stringify(data));
-		if (targetTask === null) {
-			setData(nextData);
-			return;
-		}
-		const oldColumnId = draggedTask.columnId;
-		const newColumnId = targetTask.columnId;
-
-		if (draggedTask.taskId === undefined) {
-			return;
-		}
-		nextData[draggedTask.taskId].parentId = newColumnId;
-		nextData[newColumnId].childId = [
-			...nextData[newColumnId].childId.slice(0, targetTask.position),
-			draggedTask.taskId,
-			...nextData[newColumnId].childId.slice(targetTask.position),
-		];
-		let deletePosition = -1;
-		if (oldColumnId === newColumnId) {
-			deletePosition = nextData[oldColumnId].childId.findIndex(
-				(id: string, position: number) =>
-					id === draggedTask.taskId && position !== targetTask.position,
-			);
-		} else {
-			deletePosition = nextData[oldColumnId].childId.findIndex(
-				(id: string) => id === draggedTask.taskId,
-			);
-		}
-		nextData[oldColumnId].childId = [
-			...nextData[oldColumnId].childId.slice(0, deletePosition),
-			...nextData[oldColumnId].childId.slice(deletePosition + 1),
-		];
-		setData(nextData);
-	}
-
 	React.useEffect(() => {
 		function isTaskSelected({ x, y }: typeof POSITION) {
 			for (let i = 0; i < taskBoundaries.length; i++) {
@@ -192,6 +183,25 @@ function Board({ boardId }: { boardId: string }) {
 	}, [isDragging]);
 
 	React.useEffect(() => {
+		function swapTask() {
+			if (draggedTask === null || targetTask === null) {
+				return;
+			}
+			const oldColumnId = draggedTask.columnId;
+			const newColumnId = targetTask.columnId;
+
+			if (draggedTask.taskId === undefined) {
+				return;
+			}
+
+			trigger({
+				taskId: draggedTask.taskId,
+				oldColumnId: draggedTask.columnId,
+				newColumnId: targetTask.columnId,
+				targetPosition: targetTask.position,
+			});
+			revalidate('/');
+		}
 		function handlePointerUp() {
 			setStartPosition(POSITION);
 			setCurrentPosition(POSITION);
@@ -201,110 +211,110 @@ function Board({ boardId }: { boardId: string }) {
 		return () => {
 			window.removeEventListener('pointerup', handlePointerUp);
 		};
-	}, [swapTask]);
+	}, [draggedTask, revalidate, targetTask, trigger]);
 
-	const columns = board.childId.map(id => data[id]);
+	const board = data.find(record => record.name === boardName);
+	if (!board) {
+		return <p style={{ color: 'white' }}>No data</p>;
+	}
+	const columns = board.childId
+		.map(({ id }) => data.find(r => r.id === id))
+		.filter(element => element !== undefined) as Record[];
 
 	return (
 		<Wrapper>
-			<BoardWrapper>
-				{indicatorPosition !== null && (
-					<Indicator
-						style={{
-							'--top': `${indicatorPosition.top}px`,
-							'--left': `${indicatorPosition.left}px`,
-							'--width': `${columnWidth}px`,
-						}}
-					/>
-				)}
-				{columns.map(({ name, id: columnId, childId }) => {
-					const tasks = childId.map(id => data[id]);
-					return (
-						<Column key={columnId} ref={columnRef} columnId={columnId}>
-							<ColumnTitleWrapper>
-								<Light />
-								<ColumnTitle>
-									{name} {`(${childId.length})`}
-								</ColumnTitle>
-							</ColumnTitleWrapper>
-							{tasks.map(({ title, id: taskId }) => {
-								const totalSubtask = data[taskId].childId.length;
-								const completedSubtask = data[taskId].childId.filter(
-									subtaskId => data[subtaskId].isCompleted === true,
-								).length;
-								const isTaskDragged =
-									draggedTask !== null && draggedTask.taskId === taskId;
-								return (
-									<TaskWrapper key={taskId}>
+			{indicatorPosition !== null && (
+				<Indicator
+					style={{
+						'--top': `${indicatorPosition.top}px`,
+						'--left': `${indicatorPosition.left}px`,
+						'--width': `${columnWidth}px`,
+					}}
+				/>
+			)}
+			{columns.map(({ name, id: columnId, childId }) => {
+				const tasks = childId
+					.map(({ id }) => data.find(r => r.id === id))
+					.filter(element => element !== undefined) as Record[];
+				return (
+					<Column key={columnId} ref={columnRef} columnId={columnId}>
+						<ColumnTitleWrapper>
+							<Light />
+							<ColumnTitle>
+								{name} {`(${childId.length})`}
+							</ColumnTitle>
+						</ColumnTitleWrapper>
+						{tasks.map(({ title, id: taskId }) => {
+							const totalSubtask = data[taskId].childId.length;
+							const completedSubtask = data[taskId].childId.filter(
+								({ id: subtaskId }) => data[subtaskId].isCompleted === true,
+							).length;
+							const isTaskDragged =
+								draggedTask !== null && draggedTask.taskId === taskId;
+							return (
+								<TaskWrapper key={taskId}>
+									<Task
+										ref={taskRef}
+										columnId={columnId}
+										taskId={taskId}
+										style={{
+											'--cursor': 'pointer',
+											'--background': isTaskDragged ? '#20212c' : undefined,
+										}}
+									>
+										<Tasktitle
+											style={{
+												'--color': isTaskDragged ? '#3e3f4e' : undefined,
+											}}
+										>
+											{title}
+										</Tasktitle>
+										<Subtitle
+											style={{
+												'--color': isTaskDragged ? '#3e3f4e' : undefined,
+											}}
+										>
+											{completedSubtask} of {totalSubtask} substacks
+										</Subtitle>
+									</Task>
+									{isTaskDragged && (
 										<Task
-											ref={taskRef}
 											columnId={columnId}
 											taskId={taskId}
 											style={{
-												'--cursor': 'pointer',
-												'--background': isTaskDragged ? '#20212c' : undefined,
+												'--cursor':
+													draggedTask !== null && targetTask === null
+														? 'not-allowed'
+														: 'pointer',
+												'--x': `${currentPosition.x - startPosition.x}px`,
+												'--y': `${currentPosition.y - startPosition.y}px`,
+												position: 'absolute',
+												inset: '0',
+												zIndex: '2',
+												'--background': '#828fa3',
 											}}
 										>
-											<Tasktitle
-												style={{
-													'--color': isTaskDragged ? '#3e3f4e' : undefined,
-												}}
-											>
-												{title}
-											</Tasktitle>
+											<Tasktitle>{title}</Tasktitle>
 											<Subtitle
 												style={{
-													'--color': isTaskDragged ? '#3e3f4e' : undefined,
+													'--color': isTaskDragged ? 'white' : '#828fa3',
 												}}
 											>
 												{completedSubtask} of {totalSubtask} substacks
 											</Subtitle>
 										</Task>
-										{isTaskDragged && (
-											<Task
-												columnId={columnId}
-												taskId={taskId}
-												style={{
-													'--cursor':
-														draggedTask !== null && targetTask === null
-															? 'not-allowed'
-															: 'pointer',
-													'--x': `${currentPosition.x - startPosition.x}px`,
-													'--y': `${currentPosition.y - startPosition.y}px`,
-													position: 'absolute',
-													inset: '0',
-													zIndex: '2',
-													'--background': '#828fa3',
-												}}
-											>
-												<Tasktitle>{title}</Tasktitle>
-												<Subtitle
-													style={{
-														'--color': isTaskDragged ? 'white' : '#828fa3',
-													}}
-												>
-													{completedSubtask} of {totalSubtask} substacks
-												</Subtitle>
-											</Task>
-										)}
-									</TaskWrapper>
-								);
-							})}
-						</Column>
-					);
-				})}
-			</BoardWrapper>
+									)}
+								</TaskWrapper>
+							);
+						})}
+					</Column>
+				);
+			})}
 		</Wrapper>
 	);
 }
 
 const Wrapper = styled.div`
-	background: #000112;
-	padding: 24px 12px;
-	min-height: 100%;
-`;
-
-const BoardWrapper = styled.div`
 	display: flex;
 `;
 

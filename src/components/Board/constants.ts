@@ -6,12 +6,12 @@ export type Boundary = {
 };
 
 export type DragObjectId = {
-	taskId: string;
-	columnId: string;
+	taskId: number;
+	columnId: number;
 };
 
 export type TargetTask =
-	| { type: 'id'; taskId: string; columnId: string }
+	| { type: 'id'; taskId: number; columnId: number }
 	| {
 			type: 'position';
 			x: number;
