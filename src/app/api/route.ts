@@ -2,10 +2,10 @@
 import prisma from '@/helpers/prisma';
 import { type SwapRequest } from '@/constants';
 
-// export async function GET() {
-// 	const record = await prisma.record.findMany({ include: { childId: true } });
-// 	return Response.json(record);
-// }
+export async function GET() {
+	const record = await prisma.record.findMany({ include: { childId: true } });
+	return Response.json(record);
+}
 
 export async function POST(request: Request) {
 	const { taskId, oldColumnId, newColumnId, targetPosition }: SwapRequest =
@@ -16,7 +16,10 @@ export async function POST(request: Request) {
 	});
 
 	if (oldColumnId === newColumnId && originalPosition === targetPosition) {
-		return Response.json('success');
+		const record = await prisma.record.findMany({
+			include: { childId: true },
+		});
+		return Response.json(record);
 	}
 
 	if (oldColumnId !== newColumnId) {
@@ -95,5 +98,6 @@ export async function POST(request: Request) {
 			});
 		}
 	}
-	return Response.json('success');
+	const record = await prisma.record.findMany({ include: { childId: true } });
+	return Response.json(record);
 }

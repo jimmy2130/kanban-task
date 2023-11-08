@@ -26,10 +26,7 @@ async function swapRecord(
 		body: JSON.stringify(arg),
 	});
 	const json = await response.json();
-	if (json === 'success') {
-		return json;
-	}
-	throw json;
+	return json;
 }
 
 function Board({
@@ -42,7 +39,8 @@ function Board({
 	data: Record[];
 }) {
 	const router = useRouter();
-	const { trigger } = useSWRMutation('/api', swapRecord);
+	const { data: clientData, trigger } = useSWRMutation('/api', swapRecord);
+	console.log(clientData);
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
 	const [columnRef, columnBoundaries] = useBoundingClientRect(data);
