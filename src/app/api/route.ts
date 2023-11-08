@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 		});
 		if (originalPosition < targetPosition) {
 			const target = children.filter(
-				({ order }) => order > originalPosition && order <= targetPosition,
+				({ order }) => order > originalPosition && order < targetPosition,
 			);
 			for (let i = 0; i < target.length; i++) {
 				await prisma.child.update({
@@ -75,6 +75,10 @@ export async function POST(request: Request) {
 					data: { order: target[i]['order'] - 1 },
 				});
 			}
+			await prisma.child.update({
+				where: { id: taskId },
+				data: { order: targetPosition - 1 },
+			});
 		} else if (originalPosition > targetPosition) {
 			const target = children.filter(
 				({ order }) => order >= targetPosition && order < originalPosition,
@@ -85,11 +89,11 @@ export async function POST(request: Request) {
 					data: { order: target[i]['order'] + 1 },
 				});
 			}
+			await prisma.child.update({
+				where: { id: taskId },
+				data: { order: targetPosition },
+			});
 		}
-		await prisma.child.update({
-			where: { id: taskId },
-			data: { order: targetPosition },
-		});
 	}
 	return Response.json('success');
 }

@@ -47,7 +47,7 @@ function Board({
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
 	const [columnRef, columnBoundaries] = useBoundingClientRect(startPosition);
 	const [taskRef, taskBoundaries] = useBoundingClientRect(startPosition);
-
+	console.log(taskBoundaries.map(({ taskId }) => taskId));
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
@@ -301,11 +301,7 @@ function Board({
 											}}
 										>
 											<Tasktitle>{title}</Tasktitle>
-											<Subtitle
-												style={{
-													'--color': isTaskDragged ? 'white' : '#828fa3',
-												}}
-											>
+											<Subtitle>
 												{completedSubtask} of {totalSubtask} substacks
 											</Subtitle>
 										</Task>
