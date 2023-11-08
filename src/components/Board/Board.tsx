@@ -45,9 +45,8 @@ function Board({
 	const { trigger } = useSWRMutation('/api', swapRecord);
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
-	const [columnRef, columnBoundaries] = useBoundingClientRect(startPosition);
-	const [taskRef, taskBoundaries] = useBoundingClientRect(startPosition);
-	console.log(taskBoundaries.map(({ taskId }) => taskId));
+	const [columnRef, columnBoundaries] = useBoundingClientRect(data);
+	const [taskRef, taskBoundaries] = useBoundingClientRect(data);
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
@@ -301,9 +300,6 @@ function Board({
 											}}
 										>
 											<Tasktitle>{title}</Tasktitle>
-											<Subtitle>
-												{completedSubtask} of {totalSubtask} substacks
-											</Subtitle>
 										</Task>
 									)}
 								</TaskWrapper>

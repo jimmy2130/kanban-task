@@ -10,11 +10,11 @@ type Boundary = {
 	taskId?: number;
 	columnId: number;
 };
+import { type Record } from '@/constants';
 
-function useBoundingClientRect(startPosition: {
-	x: number;
-	y: number;
-}): [{ current: Map<any, any> }, Boundary[]] {
+function useBoundingClientRect(
+	data: Record[],
+): [{ current: Map<any, any> }, Boundary[]] {
 	const refs = React.useRef(new Map());
 	const [boundaries, setBoundaries] = React.useState<Boundary[]>([]);
 
@@ -37,7 +37,7 @@ function useBoundingClientRect(startPosition: {
 			});
 		});
 		setBoundaries(boundaries);
-	}, [startPosition]);
+	}, [data]);
 
 	return [refs, boundaries];
 }
