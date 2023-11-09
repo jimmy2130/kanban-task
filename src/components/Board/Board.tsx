@@ -8,7 +8,6 @@ import useBoundingClientRect from './use-bounding-client-rect.hook';
 import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
 import type { Record, SwapRequest, ChildId } from '@/constants';
 import useSWRMutation from 'swr/mutation';
-import { useRouter } from 'next/navigation';
 
 async function swapRecord(
 	endpoint: string,
@@ -29,12 +28,7 @@ async function swapRecord(
 	return json;
 }
 
-function optimisticUpdate(
-	currentData: undefined | Record[],
-	serverData: Record[],
-	swapData: SwapRequest,
-) {
-	const inputData = currentData === undefined ? serverData : currentData;
+function optimisticUpdate(inputData: Record[], swapData: SwapRequest) {
 	const nextData: Record[] = JSON.parse(JSON.stringify(inputData));
 	const { taskId, oldColumnId, newColumnId, targetPosition } = swapData;
 	const oldColumn = nextData.find(r => r.id === oldColumnId) as Record;
@@ -106,19 +100,19 @@ function Board({
 	boardName: string;
 	serverData: Record[];
 }) {
-	const router = useRouter();
-	const { data: clientData, trigger } = useSWRMutation('/api', swapRecord);
-	if (clientData !== undefined) {
-		clientData.forEach((r: Record) =>
-			r.childId.sort((a: ChildId, b: ChildId) => a.order - b.order),
-		);
-	}
-	const data: Record[] = clientData === undefined ? serverData : clientData;
+	const { trigger } = useSWRMutation('/api', swapRecord);
+	const [optimisticData, setOptimisticData] = React.useOptimistic(
+		serverData,
+		(state: Record[], swapData: SwapRequest) =>
+			optimisticUpdate(state, swapData),
+	);
+
+	console.log(optimisticData);
 
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
-	const [columnRef, columnBoundaries] = useBoundingClientRect(data);
-	const [taskRef, taskBoundaries] = useBoundingClientRect(data);
+	const [columnRef, columnBoundaries] = useBoundingClientRect(serverData);
+	const [taskRef, taskBoundaries] = useBoundingClientRect(serverData);
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
@@ -270,12 +264,14 @@ function Board({
 				newColumnId: targetTask.columnId,
 				targetPosition: targetTask.position,
 			};
-			trigger(swapData, {
-				optimisticData: currentData =>
-					optimisticUpdate(currentData, serverData, swapData),
-			});
+			Wrapper(swapData);
+			trigger(swapData);
 			revalidate('/');
-			router.refresh();
+		}
+		function Wrapper(swapData: SwapRequest) {
+			React.startTransition(() => {
+				setOptimisticData(swapData);
+			});
 		}
 		function handlePointerUp() {
 			setStartPosition(POSITION);
@@ -286,14 +282,14 @@ function Board({
 		return () => {
 			window.removeEventListener('pointerup', handlePointerUp);
 		};
-	}, [draggedTask, targetTask, trigger, revalidate, router]);
+	}, [draggedTask, targetTask, setOptimisticData, trigger, revalidate]);
 
-	const board = data.find(record => record.name === boardName);
+	const board = optimisticData.find(record => record.name === boardName);
 	if (!board) {
 		return <p style={{ color: 'white' }}>No data</p>;
 	}
 	const columns = board.childId
-		.map(({ id }) => data.find(r => r.id === id))
+		.map(({ id }) => optimisticData.find(r => r.id === id))
 		.filter(element => element !== undefined) as Record[];
 
 	return (
@@ -309,7 +305,7 @@ function Board({
 			)}
 			{columns.map(({ name, id: columnId, childId }) => {
 				const tasks = childId
-					.map(({ id }) => data.find(r => r.id === id))
+					.map(({ id }) => optimisticData.find(r => r.id === id))
 					.filter(element => element !== undefined) as Record[];
 				return (
 					<Column key={columnId} ref={columnRef} columnId={columnId}>
@@ -320,15 +316,15 @@ function Board({
 							</ColumnTitle>
 						</ColumnTitleWrapper>
 						{tasks.map(({ title, id: taskId }) => {
-							const task = data.find(r => r.id === taskId);
+							const task = optimisticData.find(r => r.id === taskId);
 							const totalSubtask = task === undefined ? 0 : task.childId.length;
 							const completedSubtask =
 								task === undefined
 									? 0
 									: task.childId.filter(
 											({ id: subtaskId }) =>
-												data.find(r => r.id === subtaskId)?.isCompleted ===
-												true,
+												optimisticData.find(r => r.id === subtaskId)
+													?.isCompleted === true,
 									  ).length;
 							const isTaskDragged =
 								draggedTask !== null && draggedTask.taskId === taskId;

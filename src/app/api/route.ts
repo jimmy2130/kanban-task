@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 		const record = await prisma.record.findMany({
 			include: { childId: true },
 		});
-		return Response.json(record);
+		return Response.json('success');
 	}
 
 	if (oldColumnId !== newColumnId) {
@@ -98,6 +98,5 @@ export async function POST(request: Request) {
 			});
 		}
 	}
-	const record = await prisma.record.findMany({ include: { childId: true } });
-	return Response.json(record);
+	return Response.json('success');
 }
