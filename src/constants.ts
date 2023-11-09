@@ -1,4 +1,4 @@
-type ChildId = { id: number; order: number };
+export type ChildId = { id: number; order: number; recordId: number };
 export type Record = {
 	id: number;
 	type: string;

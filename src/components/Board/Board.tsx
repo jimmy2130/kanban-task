@@ -6,7 +6,7 @@ import Column from './Column';
 import Task from './Task';
 import useBoundingClientRect from './use-bounding-client-rect.hook';
 import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
-import { type Record, type SwapRequest } from '@/constants';
+import type { Record, SwapRequest, ChildId } from '@/constants';
 import useSWRMutation from 'swr/mutation';
 import { useRouter } from 'next/navigation';
 
@@ -29,18 +29,92 @@ async function swapRecord(
 	return json;
 }
 
+function optimisticUpdate(
+	currentData: undefined | Record[],
+	serverData: Record[],
+	swapData: SwapRequest,
+) {
+	const inputData = currentData === undefined ? serverData : currentData;
+	const nextData: Record[] = JSON.parse(JSON.stringify(inputData));
+	const { taskId, oldColumnId, newColumnId, targetPosition } = swapData;
+	const oldColumn = nextData.find(r => r.id === oldColumnId) as Record;
+	const oldColumnChild = oldColumn.childId.find(
+		r => r.id === taskId,
+	) as ChildId;
+	const originalPosition = oldColumnChild.order;
+
+	if (oldColumnId === newColumnId && originalPosition === targetPosition) {
+		return nextData;
+	}
+
+	if (oldColumnId !== newColumnId) {
+		const task = nextData.find(r => r.id === taskId) as Record;
+		task.parentId = newColumnId;
+
+		const newColumn = nextData.find(r => r.id === newColumnId) as Record;
+		for (let i = 0; i < newColumn.childId.length; i++) {
+			if (newColumn.childId[i]['order'] >= targetPosition) {
+				newColumn.childId[i]['order'] += 1;
+			}
+		}
+		newColumn.childId.push({
+			id: taskId,
+			order: targetPosition,
+			recordId: newColumnId,
+		});
+		newColumn.childId.sort((a, b) => a.order - b.order);
+
+		oldColumn.childId = oldColumn.childId.filter(c => c.id !== taskId);
+		for (let i = 0; i < oldColumn.childId.length; i++) {
+			if (oldColumn.childId[i]['order'] > originalPosition) {
+				oldColumn.childId[i]['order'] -= 1;
+			}
+		}
+	} else if (oldColumnId === newColumnId) {
+		if (originalPosition < targetPosition) {
+			for (let i = 0; i < oldColumn.childId.length; i++) {
+				if (
+					oldColumn.childId[i]['order'] > originalPosition &&
+					oldColumn.childId[i]['order'] < targetPosition
+				) {
+					oldColumn.childId[i]['order'] -= 1;
+				}
+			}
+			oldColumnChild.order = targetPosition - 1;
+		} else if (originalPosition > targetPosition) {
+			for (let i = 0; i < oldColumn.childId.length; i++) {
+				if (
+					oldColumn.childId[i]['order'] >= targetPosition &&
+					oldColumn.childId[i]['order'] < originalPosition
+				) {
+					oldColumn.childId[i]['order'] += 1;
+				}
+			}
+			oldColumnChild.order = targetPosition;
+		}
+		oldColumn.childId.sort((a, b) => a.order - b.order);
+	}
+	return nextData;
+}
+
 function Board({
 	revalidate,
 	boardName,
-	data,
+	serverData,
 }: {
 	revalidate: (path: string) => void;
 	boardName: string;
-	data: Record[];
+	serverData: Record[];
 }) {
 	const router = useRouter();
 	const { data: clientData, trigger } = useSWRMutation('/api', swapRecord);
-	console.log(clientData);
+	if (clientData !== undefined) {
+		clientData.forEach((r: Record) =>
+			r.childId.sort((a: ChildId, b: ChildId) => a.order - b.order),
+		);
+	}
+	const data: Record[] = clientData === undefined ? serverData : clientData;
+
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
 	const [columnRef, columnBoundaries] = useBoundingClientRect(data);
@@ -190,11 +264,15 @@ function Board({
 			) {
 				return;
 			}
-			trigger({
+			const swapData = {
 				taskId: draggedTask.taskId,
 				oldColumnId: draggedTask.columnId,
 				newColumnId: targetTask.columnId,
 				targetPosition: targetTask.position,
+			};
+			trigger(swapData, {
+				optimisticData: currentData =>
+					optimisticUpdate(currentData, serverData, swapData),
 			});
 			revalidate('/');
 			router.refresh();
@@ -208,7 +286,7 @@ function Board({
 		return () => {
 			window.removeEventListener('pointerup', handlePointerUp);
 		};
-	}, [draggedTask, revalidate, targetTask, trigger, router]);
+	}, [draggedTask, targetTask, trigger, revalidate, router]);
 
 	const board = data.find(record => record.name === boardName);
 	if (!board) {

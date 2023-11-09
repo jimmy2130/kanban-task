@@ -16,7 +16,7 @@ function BoardPage({
 			<Board
 				revalidate={revalidate}
 				boardName={'Platform Launch'}
-				data={records}
+				serverData={records}
 			/>
 		</Wrapper>
 	);
