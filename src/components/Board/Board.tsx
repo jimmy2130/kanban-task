@@ -101,13 +101,7 @@ function Board({
 	serverData: Record[];
 }) {
 	const { trigger } = useSWRMutation('/api', swapRecord);
-	const [optimisticData, setOptimisticData] = React.useOptimistic(
-		serverData,
-		(state: Record[], swapData: SwapRequest) =>
-			optimisticUpdate(state, swapData),
-	);
-
-	console.log(optimisticData);
+	const [optimisticData, setOptimisticData] = React.useState(serverData);
 
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
@@ -213,28 +207,44 @@ function Board({
 		};
 	}
 
-	React.useEffect(() => {
-		function isTaskSelected({ x, y }: typeof POSITION) {
-			for (let i = 0; i < taskBoundaries.length; i++) {
-				const { top, bottom, left, right } = taskBoundaries[i];
-				if (x >= left && x <= right && y >= top && y <= bottom) {
-					return true;
-				}
-			}
-			return false;
+	function handlePointerUp() {
+		setStartPosition(POSITION);
+		setCurrentPosition(POSITION);
+		if (
+			draggedTask === null ||
+			targetTask === null ||
+			draggedTask.taskId === undefined
+		) {
+			return;
 		}
-		function handlePointerDown({ clientX, clientY }: PointerEvent) {
-			if (!isTaskSelected({ x: clientX, y: clientY })) {
-				return;
-			}
-			setStartPosition({ x: clientX, y: clientY });
-			setCurrentPosition({ x: clientX, y: clientY });
-		}
-		window.addEventListener('pointerdown', handlePointerDown);
-		return () => {
-			window.removeEventListener('pointerdown', handlePointerDown);
+		const swapData = {
+			taskId: draggedTask.taskId,
+			oldColumnId: draggedTask.columnId,
+			newColumnId: targetTask.columnId,
+			targetPosition: targetTask.position,
 		};
-	}, [taskBoundaries]);
+		setOptimisticData(currentData => optimisticUpdate(currentData, swapData));
+		trigger(swapData);
+		revalidate('/');
+	}
+
+	function isTaskSelected({ x, y }: typeof POSITION) {
+		for (let i = 0; i < taskBoundaries.length; i++) {
+			const { top, bottom, left, right } = taskBoundaries[i];
+			if (x >= left && x <= right && y >= top && y <= bottom) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function handlePointerDown({ clientX, clientY }: React.PointerEvent) {
+		if (!isTaskSelected({ x: clientX, y: clientY })) {
+			return;
+		}
+		setStartPosition({ x: clientX, y: clientY });
+		setCurrentPosition({ x: clientX, y: clientY });
+	}
 
 	React.useEffect(() => {
 		if (!isDragging) {
@@ -248,41 +258,6 @@ function Board({
 			window.removeEventListener('pointermove', handlePointermove);
 		};
 	}, [isDragging]);
-
-	React.useEffect(() => {
-		function swapTask() {
-			if (
-				draggedTask === null ||
-				targetTask === null ||
-				draggedTask.taskId === undefined
-			) {
-				return;
-			}
-			const swapData = {
-				taskId: draggedTask.taskId,
-				oldColumnId: draggedTask.columnId,
-				newColumnId: targetTask.columnId,
-				targetPosition: targetTask.position,
-			};
-			Wrapper(swapData);
-			trigger(swapData);
-			revalidate('/');
-		}
-		function Wrapper(swapData: SwapRequest) {
-			React.startTransition(() => {
-				setOptimisticData(swapData);
-			});
-		}
-		function handlePointerUp() {
-			setStartPosition(POSITION);
-			setCurrentPosition(POSITION);
-			swapTask();
-		}
-		window.addEventListener('pointerup', handlePointerUp);
-		return () => {
-			window.removeEventListener('pointerup', handlePointerUp);
-		};
-	}, [draggedTask, targetTask, setOptimisticData, trigger, revalidate]);
 
 	const board = optimisticData.find(record => record.name === boardName);
 	if (!board) {
@@ -338,6 +313,7 @@ function Board({
 											'--cursor': 'pointer',
 											'--background': isTaskDragged ? '#20212c' : undefined,
 										}}
+										handlePointerDown={handlePointerDown}
 									>
 										<Tasktitle
 											style={{
@@ -370,6 +346,7 @@ function Board({
 												zIndex: '2',
 												'--background': '#828fa3',
 											}}
+											handlePointerUp={handlePointerUp}
 										>
 											<Tasktitle>{title}</Tasktitle>
 										</Task>

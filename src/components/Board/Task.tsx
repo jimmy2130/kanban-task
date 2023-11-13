@@ -5,9 +5,21 @@ import styled from 'styled-components';
 type Props = React.ComponentProps<'div'> & {
 	columnId: number;
 	taskId: number;
+	handlePointerDown?: ({ clientX, clientY }: React.PointerEvent) => void;
+	handlePointerUp?: () => void;
 };
 
-function Task({ children, columnId, taskId, ...delegated }: Props, ref: any) {
+function Task(
+	{
+		children,
+		columnId,
+		taskId,
+		handlePointerDown,
+		handlePointerUp,
+		...delegated
+	}: Props,
+	ref: any,
+) {
 	return (
 		<Wrapper
 			ref={
@@ -23,6 +35,12 @@ function Task({ children, columnId, taskId, ...delegated }: Props, ref: any) {
 					: null
 			}
 			{...delegated}
+			onPointerDown={(e: React.PointerEvent) => {
+				if (handlePointerDown) {
+					handlePointerDown(e);
+				}
+			}}
+			onPointerUp={handlePointerUp}
 		>
 			{children}
 		</Wrapper>
@@ -40,6 +58,8 @@ const Wrapper = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+
+	touch-action: none;
 
 	&:hover {
 		cursor: var(--cursor);
