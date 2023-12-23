@@ -8,6 +8,7 @@ import useBoundingClientRect from './use-bounding-client-rect.hook';
 import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
 import type { Record, SwapRequest, ChildId } from '@/constants';
 import useSWRMutation from 'swr/mutation';
+import useSWR from 'swr';
 
 async function swapRecord(
 	endpoint: string,
@@ -28,9 +29,17 @@ async function swapRecord(
 	return json;
 }
 
+async function getRecord(endpoint: string) {
+	const response = await fetch(endpoint);
+	const json = await response.json();
+	return json;
+}
+
 function optimisticUpdate(inputData: Record[], swapData: SwapRequest) {
 	const nextData: Record[] = JSON.parse(JSON.stringify(inputData));
+
 	const { taskId, oldColumnId, newColumnId, targetPosition } = swapData;
+
 	const oldColumn = nextData.find(r => r.id === oldColumnId) as Record;
 	const oldColumnChild = oldColumn.childId.find(
 		r => r.id === taskId,
@@ -56,7 +65,6 @@ function optimisticUpdate(inputData: Record[], swapData: SwapRequest) {
 			order: targetPosition,
 			recordId: newColumnId,
 		});
-		newColumn.childId.sort((a, b) => a.order - b.order);
 
 		oldColumn.childId = oldColumn.childId.filter(c => c.id !== taskId);
 		for (let i = 0; i < oldColumn.childId.length; i++) {
@@ -86,27 +94,25 @@ function optimisticUpdate(inputData: Record[], swapData: SwapRequest) {
 			}
 			oldColumnChild.order = targetPosition;
 		}
-		oldColumn.childId.sort((a, b) => a.order - b.order);
 	}
+
 	return nextData;
 }
 
 function Board({
-	revalidate,
 	boardName,
 	serverData,
 }: {
-	revalidate: (path: string) => void;
 	boardName: string;
 	serverData: Record[];
 }) {
+	const { data: clientData }: { data: Record[] } = useSWR('/api', getRecord);
 	const { trigger } = useSWRMutation('/api', swapRecord);
-	const [optimisticData, setOptimisticData] = React.useState(serverData);
 
 	const [startPosition, setStartPosition] = React.useState(POSITION);
 	const [currentPosition, setCurrentPosition] = React.useState(POSITION);
-	const [columnRef, columnBoundaries] = useBoundingClientRect(serverData);
-	const [taskRef, taskBoundaries] = useBoundingClientRect(serverData);
+	const [columnRef, columnBoundaries] = useBoundingClientRect(clientData);
+	const [taskRef, taskBoundaries] = useBoundingClientRect(clientData);
 	const draggedTask = getDraggedTask(startPosition);
 	const targetTask = getTargetTask(currentPosition);
 	const indicatorPosition = getIndicatorPosition();
@@ -223,9 +229,11 @@ function Board({
 			newColumnId: targetTask.columnId,
 			targetPosition: targetTask.position,
 		};
-		setOptimisticData(currentData => optimisticUpdate(currentData, swapData));
-		trigger(swapData);
-		revalidate('/');
+
+		trigger(swapData, {
+			optimisticData: currentData => optimisticUpdate(currentData, swapData),
+			rollbackOnError: true,
+		});
 	}
 
 	function isTaskSelected({ x, y }: typeof POSITION) {
@@ -259,12 +267,20 @@ function Board({
 		};
 	}, [isDragging]);
 
-	const board = optimisticData.find(record => record.name === boardName);
+	let usedData: Record[];
+
+	if (clientData) {
+		usedData = clientData;
+	} else {
+		usedData = serverData;
+	}
+
+	const board = usedData.find(record => record.name === boardName);
 	if (!board) {
 		return <p style={{ color: 'white' }}>No data</p>;
 	}
 	const columns = board.childId
-		.map(({ id }) => optimisticData.find(r => r.id === id))
+		.map(({ id }) => usedData.find(r => r.id === id))
 		.filter(element => element !== undefined) as Record[];
 
 	return (
@@ -280,7 +296,8 @@ function Board({
 			)}
 			{columns.map(({ name, id: columnId, childId }) => {
 				const tasks = childId
-					.map(({ id }) => optimisticData.find(r => r.id === id))
+					.toSorted((a, b) => a.order - b.order)
+					.map(({ id }) => usedData.find(r => r.id === id))
 					.filter(element => element !== undefined) as Record[];
 				return (
 					<Column key={columnId} ref={columnRef} columnId={columnId}>
@@ -291,15 +308,15 @@ function Board({
 							</ColumnTitle>
 						</ColumnTitleWrapper>
 						{tasks.map(({ title, id: taskId }) => {
-							const task = optimisticData.find(r => r.id === taskId);
+							const task = usedData.find(r => r.id === taskId);
 							const totalSubtask = task === undefined ? 0 : task.childId.length;
 							const completedSubtask =
 								task === undefined
 									? 0
 									: task.childId.filter(
 											({ id: subtaskId }) =>
-												optimisticData.find(r => r.id === subtaskId)
-													?.isCompleted === true,
+												usedData.find(r => r.id === subtaskId)?.isCompleted ===
+												true,
 									  ).length;
 							const isTaskDragged =
 								draggedTask !== null && draggedTask.taskId === taskId;

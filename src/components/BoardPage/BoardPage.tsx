@@ -4,20 +4,10 @@ import Board from '@/components/Board';
 import styled from 'styled-components';
 import { type Record } from '@/constants';
 
-function BoardPage({
-	records,
-	revalidate,
-}: {
-	records: Record[];
-	revalidate: (path: string) => void;
-}) {
+function BoardPage({ records }: { records: Record[] }) {
 	return (
 		<Wrapper>
-			<Board
-				revalidate={revalidate}
-				boardName={'Platform Launch'}
-				serverData={records}
-			/>
+			<Board boardName={'Platform Launch'} serverData={records} />
 		</Wrapper>
 	);
 }
