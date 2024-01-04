@@ -1,7 +1,6 @@
-import StyledComponentsRegistry from '@/components/StyledComponentsRegistry';
-import GlobalStyles from '@/components/GlobalStyles';
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import './styles.css';
 
 const mainFont = Plus_Jakarta_Sans({
 	subsets: ['latin'],
@@ -22,12 +21,7 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en" className={mainFont.variable}>
-			<body>
-				<StyledComponentsRegistry>
-					<GlobalStyles />
-					{children}
-				</StyledComponentsRegistry>
-			</body>
+			<body>{children}</body>
 		</html>
 	);
 }

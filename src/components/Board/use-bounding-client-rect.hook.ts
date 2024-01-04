@@ -10,7 +10,7 @@ type Boundary = {
 	taskId?: number;
 	columnId: number;
 };
-import { type Record } from '@/constants';
+import { type Record } from '@/types';
 
 function useBoundingClientRect(
 	data: Record[],

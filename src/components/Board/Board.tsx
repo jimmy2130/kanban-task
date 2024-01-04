@@ -1,14 +1,14 @@
 'use client';
-import * as React from 'react';
-import styled from 'styled-components';
+import React from 'react';
 import Indicator from './Indicator';
 import Column from './Column';
 import Task from './Task';
 import useBoundingClientRect from './use-bounding-client-rect.hook';
 import { POSITION, GAP, INDICATOR_HEIGHT } from './constants';
-import type { Record, SwapRequest, ChildId } from '@/constants';
+import type { Record, SwapRequest, ChildId } from '@/types';
 import useSWRMutation from 'swr/mutation';
 import useSWR from 'swr';
+import styles from './Board.module.css';
 
 async function swapRecord(
 	endpoint: string,
@@ -284,14 +284,12 @@ function Board({
 		.filter(element => element !== undefined) as Record[];
 
 	return (
-		<Wrapper>
+		<div className={styles.wrapper}>
 			{indicatorPosition !== null && (
 				<Indicator
-					style={{
-						'--top': `${indicatorPosition.top}px`,
-						'--left': `${indicatorPosition.left}px`,
-						'--width': `${columnWidth}px`,
-					}}
+					top={indicatorPosition.top}
+					left={indicatorPosition.left}
+					width={columnWidth}
 				/>
 			)}
 			{columns.map(({ name, id: columnId, childId }) => {
@@ -301,12 +299,12 @@ function Board({
 					.filter(element => element !== undefined) as Record[];
 				return (
 					<Column key={columnId} ref={columnRef} columnId={columnId}>
-						<ColumnTitleWrapper>
-							<Light />
-							<ColumnTitle>
+						<div className={styles.columnTitleWrapper}>
+							<span className={styles.light} />
+							<span className={styles.columnTitle}>
 								{name} {`(${childId.length})`}
-							</ColumnTitle>
-						</ColumnTitleWrapper>
+							</span>
+						</div>
 						{tasks.map(({ title, id: taskId }) => {
 							const task = usedData.find(r => r.id === taskId);
 							const totalSubtask = task === undefined ? 0 : task.childId.length;
@@ -321,7 +319,7 @@ function Board({
 							const isTaskDragged =
 								draggedTask !== null && draggedTask.taskId === taskId;
 							return (
-								<TaskWrapper key={taskId}>
+								<div key={taskId} className={styles.taskWrapper}>
 									<Task
 										ref={taskRef}
 										columnId={columnId}
@@ -332,20 +330,22 @@ function Board({
 										}}
 										handlePointerDown={handlePointerDown}
 									>
-										<Tasktitle
+										<span
 											style={{
 												'--color': isTaskDragged ? '#3e3f4e' : undefined,
 											}}
+											className={styles.taskTitle}
 										>
 											{title}
-										</Tasktitle>
-										<Subtitle
+										</span>
+										<span
 											style={{
 												'--color': isTaskDragged ? '#3e3f4e' : undefined,
 											}}
+											className={styles.subTitle}
 										>
 											{completedSubtask} of {totalSubtask} substacks
-										</Subtitle>
+										</span>
 									</Task>
 									{isTaskDragged && (
 										<Task
@@ -365,59 +365,17 @@ function Board({
 											}}
 											handlePointerUp={handlePointerUp}
 										>
-											<Tasktitle>{title}</Tasktitle>
+											<span className={styles.taskTitle}>{title}</span>
 										</Task>
 									)}
-								</TaskWrapper>
+								</div>
 							);
 						})}
 					</Column>
 				);
 			})}
-		</Wrapper>
+		</div>
 	);
 }
-
-const Wrapper = styled.div`
-	display: flex;
-`;
-
-const ColumnTitleWrapper = styled.div`
-	margin-bottom: 4px;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-`;
-
-const Light = styled.span`
-	width: 15px;
-	height: 15px;
-	border-radius: 50%;
-	background: #49c4e5;
-`;
-
-const ColumnTitle = styled.span`
-	color: #828fa3;
-	font-size: calc(12 / 16 * 1rem);
-	font-weight: 700;
-	letter-spacing: 2.4px;
-	text-transform: uppercase;
-`;
-
-const TaskWrapper = styled.div`
-	position: relative;
-`;
-
-const Tasktitle = styled.span`
-	color: var(--color, #fff);
-	font-size: calc(15 / 16 * 1rem);
-	font-weight: 700;
-`;
-
-const Subtitle = styled.span`
-	color: var(--color, #828fa3);
-	font-size: calc(12 / 16 * 1rem);
-	font-weight: 700;
-`;
 
 export default Board;

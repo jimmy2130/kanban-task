@@ -1,0 +1,41 @@
+.wrapper {
+	display: flex;
+}
+
+.columnTitleWrapper {
+	margin-bottom: 4px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.light {
+	width: 15px;
+	height: 15px;
+	border-radius: 50%;
+	background: #49c4e5;
+}
+
+.columnTitle {
+	color: #828fa3;
+	font-size: calc(12 / 16 * 1rem);
+	font-weight: 700;
+	letter-spacing: 2.4px;
+	text-transform: uppercase;
+}
+
+.taskWrapper {
+	position: relative;
+}
+
+.taskTitle {
+	color: var(--color, #fff);
+	font-size: calc(15 / 16 * 1rem);
+	font-weight: 700;
+}
+
+.subTitle {
+	color: var(--color, #828fa3);
+	font-size: calc(12 / 16 * 1rem);
+	font-weight: 700;
+}

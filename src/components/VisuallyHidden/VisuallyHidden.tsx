@@ -1,6 +1,5 @@
-'use client';
 import React from 'react';
-import styled from 'styled-components';
+import styles from './VisuallyHidden.module.css';
 
 type VisuallyHiddenProps<C extends React.ElementType> = {
 	as?: C;
@@ -12,22 +11,12 @@ function VisuallyHidden<C extends React.ElementType>({
 	children,
 	...delegated
 }: VisuallyHiddenProps<C>) {
+	const Tag = as || 'span';
 	return (
-		<Wrapper as={as || 'span'} {...delegated}>
+		<Tag className={styles.wrapper} {...delegated}>
 			{children}
-		</Wrapper>
+		</Tag>
 	);
 }
-
-const Wrapper = styled.span`
-	position: absolute;
-	overflow: hidden;
-	clip: rect(0 0 0 0);
-	height: 1px;
-	width: 1px;
-	margin: -1px;
-	padding: 0;
-	border: 0;
-`;
 
 export default VisuallyHidden;

@@ -1,6 +1,5 @@
-'use client';
-import * as React from 'react';
-import styled from 'styled-components';
+import React from 'react';
+import styles from './Task.module.css';
 
 type Props = React.ComponentProps<'div'> & {
 	columnId: number;
@@ -21,7 +20,8 @@ function Task(
 	ref: any,
 ) {
 	return (
-		<Wrapper
+		<div
+			className={styles.wrapper}
 			ref={
 				ref !== null
 					? node => {
@@ -43,27 +43,8 @@ function Task(
 			onPointerUp={handlePointerUp}
 		>
 			{children}
-		</Wrapper>
+		</div>
 	);
 }
-
-const Wrapper = styled.div`
-	padding: 24px 16px;
-	border-radius: 8px;
-	transform: translate(var(--x, 0), var(--y, 0));
-	user-select: none;
-	background: var(--background, #2b2c37);
-	filter: drop-shadow(0px 4px 6px hsl(220deg 40% 35% / 0.1015));
-
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-
-	touch-action: none;
-
-	&:hover {
-		cursor: var(--cursor);
-	}
-`;
 
 export default React.forwardRef(Task);

@@ -1,14 +1,13 @@
-'use client';
-import * as React from 'react';
-import styled from 'styled-components';
+import React from 'react';
 import { GAP } from './constants';
+import styles from './Column.module.css';
 
 function Column(
 	{ children, columnId }: { children: React.ReactNode; columnId: number },
 	ref: any,
 ) {
 	return (
-		<Wrapper
+		<div
 			ref={node => {
 				const map = ref.current;
 				if (node) {
@@ -17,21 +16,12 @@ function Column(
 					map.delete(columnId);
 				}
 			}}
+			style={{ '--gap': `${GAP}px` }}
+			className={styles.wrapper}
 		>
 			{children}
-		</Wrapper>
+		</div>
 	);
 }
-
-const Wrapper = styled.div`
-	flex-basis: 280px;
-	min-height: 200px;
-	display: flex;
-	flex-direction: column;
-	gap: ${GAP}px;
-	padding-bottom: 20px;
-	padding-left: 12px;
-	padding-right: 12px;
-`;
 
 export default React.forwardRef(Column);

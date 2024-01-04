@@ -1,6 +1,6 @@
 // https://www.youtube.com/watch?v=xirQ7AMyTM8
 import prisma from '@/helpers/prisma';
-import { type SwapRequest } from '@/constants';
+import { type SwapRequest } from '@/types';
 
 export async function GET() {
 	const record = await prisma.record.findMany({ include: { childId: true } });
