@@ -1,0 +1,53 @@
+.baseButton {
+	display: block;
+	margin: 0;
+	padding: 0;
+	border: none;
+
+	cursor: pointer;
+	text-align: center;
+	font: inherit;
+
+	width: 100%;
+	height: var(--height);
+
+	font-size: calc(15 / 16 * 1rem);
+	line-height: 19px;
+	font-weight: 700;
+
+	border-radius: 5000px;
+}
+
+.baseButton:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.primaryButton {
+	composes: baseButton;
+	background: #635fc7;
+	color: white;
+}
+
+.primaryButton:hover {
+	background: #a8a4ff;
+}
+
+.secondaryButton {
+	composes: baseButton;
+	background: #f4f7fd;
+	color: #635fc7;
+}
+
+.secondaryButton:hover {
+	background: hsl(242deg 48% 58% / 0.25);
+}
+
+.destructiveButton {
+	composes: baseButton;
+	background: #ea5555;
+	color: white;
+}
+
+.destructiveButton:hover {
+	background: #ff9898;
+}

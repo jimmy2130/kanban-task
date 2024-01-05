@@ -1,15 +1,14 @@
 .wrapper {
-	--border: 1px;
-	height: calc(96px + var(--border));
+	--border-width: 1px;
+	height: calc(96px + var(--border-width));
 	background: #2b2c37;
-	border-bottom: var(--border) solid #828fa3;
+	border-bottom: var(--border-width) solid #3e3f4e;
 
 	display: flex;
 }
 
 .logoSection {
-	min-width: calc(210px + var(--border));
-	border-right: var(--border) solid #828fa3;
+	min-width: 210px;
 	position: relative;
 }
 
@@ -23,25 +22,49 @@
 	transform: translateX(24px);
 }
 
+.border {
+	width: 1px;
+	background: #828fa3;
+}
+
 .headerSection {
+	position: relative;
+
 	flex: 1;
-	padding-left: 24px;
-	padding-right: 24px;
+
+	padding-right: 8px;
 	display: flex;
-	justify-content: space-between;
+	justify-content: flex-end;
 	align-items: center;
 }
 
 .boardName {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 24px;
+	height: min-content;
+	margin-top: auto;
+	margin-bottom: auto;
+
+	transform: translateY(2px);
+
 	font-size: calc(24 / 16 * 1rem);
 	font-weight: 700;
 	color: white;
 	line-height: 30px;
-	margin-top: 4px;
 }
 
-.button.button {
-	padding-left: 24px;
-	padding-right: 24px;
-	border-radius: 5000px;
+.controlGroup {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.buttonWrapper {
+	width: 164px;
+}
+
+.iconButtonWrapper {
+	position: relative;
 }

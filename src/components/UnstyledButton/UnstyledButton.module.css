@@ -1,0 +1,19 @@
+.unstyledButton {
+	display: block;
+	margin: 0;
+	padding: 0;
+	border: none;
+
+	cursor: pointer;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	background: inherit;
+
+	height: 100%;
+	width: 100%;
+}
+
+.unstyledButton:focus:not(:focus-visible) {
+	outline: none;
+}

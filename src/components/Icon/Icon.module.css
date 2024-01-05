@@ -1,0 +1,8 @@
+.wrapper {
+	display: block;
+	width: var(--width);
+	height: 100%;
+
+	display: grid;
+	place-content: center;
+}

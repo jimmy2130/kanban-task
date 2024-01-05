@@ -1,0 +1,44 @@
+.actionsPanelWrapper {
+	position: absolute;
+	bottom: var(--bottom);
+	transform: translateY(100%);
+	right: var(--right);
+
+	padding: 0px;
+	list-style: none;
+
+	background: white;
+	border-radius: 8px;
+
+	width: 192px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.action {
+	padding: 0px;
+	height: 47px;
+	font-size: calc(13 / 16 * 1rem);
+	line-height: 23px;
+	color: var(--color);
+}
+
+.unstyledButton {
+	composes: unstyledButton from '../UnstyledButton/UnstyledButton.module.css';
+	padding-left: 16px;
+	display: grid;
+}
+
+.unstyledTopButton {
+	composes: unstyledButton;
+	align-content: start;
+	padding-top: 16px;
+}
+
+.unstyledBottomButton {
+	composes: unstyledButton;
+	align-content: end;
+	padding-bottom: 16px;
+}
